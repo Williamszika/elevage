@@ -21,7 +21,8 @@ elevage/
 ├── node/
 │   └── build_deck.js           → Présentation partenaires (PowerPoint .pptx, 17 diapos)
 ├── web/
-│   ├── maquette_3d_ferme.html  → Maquette 3D interactive (à ouvrir dans un navigateur)
+│   ├── maquette_3d_ferme.html  → Maquette 3D interactive + visite à pied (navigateur)
+│   ├── planning_construction.html → Planning des travaux par phases + budget FCFA
 │   └── vendor/                 → Three.js embarqué (pour un fonctionnement 100 % hors-ligne)
 ├── assets/
 │   └── site_plan.png           → Image du plan de masse (utilisée par la présentation)
@@ -109,10 +110,19 @@ Aucune installation. Ouvre simplement le fichier dans un navigateur récent
 web/maquette_3d_ferme.html
 ```
 
-* Glisser : tourner autour de la ferme
-* Molette : zoomer
-* Clic droit : déplacer
-* Bouton en haut à droite : rotation automatique / recentrer
+* Glisser : tourner autour de la ferme · Molette : zoomer · Clic droit : déplacer
+* **Visite à pied** (bouton 🚶) : rentrer dans les bâtiments à hauteur d'homme
+  (Z/W avancer, S reculer, Q/A et D pour les côtés, glisser pour regarder)
+* **Toits** (bouton 🏠) : masquer les toitures pour voir les intérieurs
+* **Aller à…** : boutons pour survoler chaque infrastructure (bergerie, aire, hangar…)
+* Rotation automatique / recentrer
+
+La maquette reprend **toutes les infrastructures du plan de masse** (château d'eau,
+silo, couloir de contention, quai, compostage, éclairage, etc.) et un intérieur
+de bergerie (6 cases, couloir, mangeoires).
+
+Voir aussi `web/planning_construction.html` : le planning des travaux par phases
+avec un budget indicatif par lot (FCFA) — s'ouvre dans un navigateur.
 
 > **Fonctionne 100 % hors-ligne** : la bibliothèque Three.js est embarquée dans
 > `web/vendor/`. Aucune connexion internet n'est nécessaire. Pense simplement à

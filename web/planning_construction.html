@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Planning de construction par phases — Ferme d'élevage ovin (Tchoro, Korhogo)</title>
+<style>
+  :root{
+    --bg:#f4f1e8; --card:#ffffff; --ink:#26302b; --sub:#6c746b; --line:#e4dfd0;
+    --green:#2e7d32; --greenD:#1b5e20; --earth:#8d6e63; --amber:#b26a1f;
+    --p0:#98a598; --p1:#2e7d32; --p2:#b98a2e; --p3:#3f7cad;
+    --shadow:0 10px 34px rgba(30,40,25,.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#151814; --card:#1e231d; --ink:#e9ede4; --sub:#9aa398; --line:#2d332b;
+           --green:#5bb56a; --greenD:#3c9a4a; --earth:#b08d7e; --amber:#d9962f;
+           --shadow:0 10px 34px rgba(0,0,0,.4); }
+  }
+  :root[data-theme="dark"]{ --bg:#151814; --card:#1e231d; --ink:#e9ede4; --sub:#9aa398;
+    --line:#2d332b; --green:#5bb56a; --greenD:#3c9a4a; --earth:#b08d7e; --amber:#d9962f;
+    --shadow:0 10px 34px rgba(0,0,0,.4); }
+  :root[data-theme="light"]{ --bg:#f4f1e8; --card:#ffffff; --ink:#26302b; --sub:#6c746b;
+    --line:#e4dfd0; --green:#2e7d32; --greenD:#1b5e20; --earth:#8d6e63; --amber:#b26a1f;
+    --shadow:0 10px 34px rgba(30,40,25,.10); }
+
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5;
+    -webkit-font-smoothing:antialiased; }
+  .num{ font-variant-numeric:tabular-nums; font-family:ui-monospace,"DejaVu Sans Mono",monospace; }
+  .wrap{ max-width:1060px; margin:0 auto; padding:clamp(18px,4vw,44px) clamp(16px,4vw,40px) 60px; }
+
+  header.top{ border-left:5px solid var(--green); padding-left:18px; margin-bottom:28px; }
+  .eyebrow{ text-transform:uppercase; letter-spacing:2px; font-size:12px; font-weight:700;
+    color:var(--green); margin:0 0 6px; }
+  h1{ font-size:clamp(24px,4vw,34px); margin:0 0 6px; text-wrap:balance; }
+  header.top p{ margin:0; color:var(--sub); font-size:15px; }
+
+  .tiles{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:26px 0 30px; }
+  .tile{ background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; box-shadow:var(--shadow); }
+  .tile .v{ font-size:26px; font-weight:800; color:var(--greenD); }
+  .tile .l{ font-size:12.5px; color:var(--sub); margin-top:2px; }
+  @media (max-width:640px){ .tiles{ grid-template-columns:1fr; } }
+
+  h2{ font-size:19px; margin:34px 0 4px; }
+  .lead{ color:var(--sub); font-size:14px; margin:0 0 16px; }
+
+  /* Gantt */
+  .gantt{ background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px 20px; box-shadow:var(--shadow); overflow-x:auto; }
+  .grow{ display:grid; grid-template-columns:200px repeat(6,1fr); align-items:center;
+    gap:0; min-width:560px; }
+  .grow + .grow{ margin-top:8px; }
+  .ghead{ font-size:12px; color:var(--sub); font-weight:700; text-align:center;
+    padding-bottom:6px; border-bottom:1px solid var(--line); }
+  .glabel{ font-size:13.5px; font-weight:600; padding-right:10px; }
+  .gcell{ height:26px; position:relative; }
+  .bar{ position:absolute; top:4px; bottom:4px; border-radius:6px; opacity:.92; }
+  .cap{ font-size:11.5px; color:#fff; line-height:18px; padding:0 8px; white-space:nowrap; }
+
+  /* phase blocks */
+  .phase{ background:var(--card); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); margin-top:18px; overflow:hidden; }
+  .phbar{ display:flex; align-items:center; gap:12px; padding:14px 18px; color:#fff; }
+  .phbar .pn{ font-size:12px; font-weight:800; letter-spacing:1px; opacity:.9; }
+  .phbar .pt{ font-size:17px; font-weight:800; }
+  .phbar .pp{ margin-left:auto; font-size:13px; background:rgba(255,255,255,.18);
+    padding:3px 10px; border-radius:999px; font-weight:700; }
+  table{ width:100%; border-collapse:collapse; }
+  th,td{ text-align:left; padding:10px 18px; font-size:14px; border-top:1px solid var(--line); }
+  th{ font-size:11.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--sub);
+    background:transparent; }
+  td.amt, th.amt{ text-align:right; white-space:nowrap; }
+  tr td:first-child{ font-weight:600; }
+  .sub td{ background:color-mix(in srgb, var(--green) 8%, transparent); font-weight:700;
+    border-top:2px solid var(--line); }
+
+  .total{ display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px;
+    background:var(--greenD); color:#fff; border-radius:14px; padding:18px 22px; margin-top:24px;
+    box-shadow:var(--shadow); }
+  .total .big{ font-size:30px; font-weight:800; }
+  .total .lab{ font-size:14px; opacity:.9; }
+  .total .side{ margin-left:auto; text-align:right; font-size:13px; opacity:.92; }
+
+  .prio{ display:flex; flex-wrap:wrap; gap:14px; margin:6px 0 2px; font-size:13px; color:var(--sub); }
+  .dot{ display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px;
+    vertical-align:-1px; }
+  .note{ margin-top:26px; font-size:13px; color:var(--sub); border-top:1px solid var(--line);
+    padding-top:16px; }
+  .note b{ color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Ferme d'élevage ovin — Tchoro (Korhogo)</p>
+    <h1>Planning de construction par phases</h1>
+    <p>Budget indicatif par lot (FCFA) · représentation « vue d'artiste », non contractuelle</p>
+  </header>
+
+  <div class="tiles">
+    <div class="tile"><div class="v num">9 200 000</div><div class="l">FCFA — total infrastructures (indicatif)</div></div>
+    <div class="tile"><div class="v">4 phases</div><div class="l">de la préparation à l'extension</div></div>
+    <div class="tile"><div class="v">≈ 4–6 mois</div><div class="l">essentiel opérationnel dès ~4 mois</div></div>
+  </div>
+
+  <div class="prio">
+    <span><span class="dot" style="background:var(--p0)"></span>P0 Préparation</span>
+    <span><span class="dot" style="background:var(--p1)"></span>P1 Essentiel (démarrage)</span>
+    <span><span class="dot" style="background:var(--p2)"></span>P2 Équipements &amp; annexes</span>
+    <span><span class="dot" style="background:var(--p3)"></span>P3 Extension / autonomie</span>
+  </div>
+
+  <h2>Calendrier prévisionnel</h2>
+  <p class="lead">Enchaînement des phases sur environ 6 mois (P2 démarre en recouvrement de la fin du gros œuvre).</p>
+  <div class="gantt">
+    <div class="grow">
+      <div></div>
+      <div class="ghead">Mois 1</div><div class="ghead">Mois 2</div><div class="ghead">Mois 3</div>
+      <div class="ghead">Mois 4</div><div class="ghead">Mois 5</div><div class="ghead">Mois 6</div>
+    </div>
+    <div class="grow">
+      <div class="glabel">P0 · Préparation</div>
+      <div class="gcell"><div class="bar" style="left:4px;right:4px;background:var(--p0)"><span class="cap">Terrain</span></div></div>
+      <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+    </div>
+    <div class="grow">
+      <div class="glabel">P1 · Gros œuvre essentiel</div>
+      <div class="gcell"><div class="bar" style="left:4px;right:0;background:var(--p1)"></div></div>
+      <div class="gcell"><div class="bar" style="left:0;right:0;background:var(--p1)"><span class="cap">Bergerie, abris, eau…</span></div></div>
+      <div class="gcell"><div class="bar" style="left:0;right:4px;background:var(--p1)"></div></div>
+      <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+    </div>
+    <div class="grow">
+      <div class="glabel">P2 · Équipements &amp; annexes</div>
+      <div class="gcell"></div><div class="gcell"></div>
+      <div class="gcell"><div class="bar" style="left:4px;right:0;background:var(--p2)"></div></div>
+      <div class="gcell"><div class="bar" style="left:0;right:4px;background:var(--p2)"><span class="cap">Élec, contention…</span></div></div>
+      <div class="gcell"></div><div class="gcell"></div>
+    </div>
+    <div class="grow">
+      <div class="glabel">P3 · Extension / autonomie</div>
+      <div class="gcell"></div><div class="gcell"></div><div class="gcell"></div><div class="gcell"></div>
+      <div class="gcell"><div class="bar" style="left:4px;right:0;background:var(--p3)"></div></div>
+      <div class="gcell"><div class="bar" style="left:0;right:4px;background:var(--p3)"><span class="cap">Solaire, silo…</span></div></div>
+    </div>
+  </div>
+
+  <h2>Détail des lots &amp; budget</h2>
+  <p class="lead">Montants indicatifs en FCFA, à confirmer par des devis locaux (maçon, fournisseurs, marché à bétail).</p>
+
+  <!-- PHASE 0 -->
+  <div class="phase">
+    <div class="phbar" style="background:var(--p0)">
+      <span class="pn">PHASE 0</span><span class="pt">Préparation du site</span>
+      <span class="pp num">250 000 FCFA</span>
+    </div>
+    <table>
+      <thead><tr><th>Lot</th><th>Détail</th><th class="amt">Montant (FCFA)</th></tr></thead>
+      <tbody>
+        <tr><td>Nettoyage &amp; terrassement</td><td>débroussaillage, nivellement du terrain</td><td class="amt num">150 000</td></tr>
+        <tr><td>Implantation &amp; bornage</td><td>traçage, piquetage, repères</td><td class="amt num">100 000</td></tr>
+        <tr class="sub"><td colspan="2">Sous-total Phase 0</td><td class="amt num">250 000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PHASE 1 -->
+  <div class="phase">
+    <div class="phbar" style="background:var(--p1)">
+      <span class="pn">PHASE 1</span><span class="pt">Gros œuvre essentiel</span>
+      <span class="pp num">5 450 000 FCFA</span>
+    </div>
+    <table>
+      <thead><tr><th>Lot</th><th>Détail</th><th class="amt">Montant (FCFA)</th></tr></thead>
+      <tbody>
+        <tr><td>Bergerie (72 m²)</td><td>fondations, murs, dalle, charpente + toiture, 6 cases</td><td class="amt num">2 200 000</td></tr>
+        <tr><td>Hangar à fourrage (19 m²)</td><td>abri ouvert, dalle, toiture</td><td class="amt num">450 000</td></tr>
+        <tr><td>Infirmerie / quarantaine (12 m²)</td><td>local fermé isolé</td><td class="amt num">500 000</td></tr>
+        <tr><td>Aire d'exercice (≈114 m²)</td><td>sol stabilisé + clôture de l'aire</td><td class="amt num">400 000</td></tr>
+        <tr><td>Clôture périmétrique + portail</td><td>muret + grillage, portail 3 m</td><td class="amt num">750 000</td></tr>
+        <tr><td>Eau : château d'eau + réseau + abreuvoirs</td><td>réserve surélevée, tuyauterie, 4 abreuvoirs</td><td class="amt num">900 000</td></tr>
+        <tr><td>Fumière</td><td>fosse maçonnée étanche (~7 m²)</td><td class="amt num">250 000</td></tr>
+        <tr class="sub"><td colspan="2">Sous-total Phase 1</td><td class="amt num">5 450 000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PHASE 2 -->
+  <div class="phase">
+    <div class="phbar" style="background:var(--p2)">
+      <span class="pn">PHASE 2</span><span class="pt">Équipements &amp; annexes</span>
+      <span class="pp num">2 200 000 FCFA</span>
+    </div>
+    <table>
+      <thead><tr><th>Lot</th><th>Détail</th><th class="amt">Montant (FCFA)</th></tr></thead>
+      <tbody>
+        <tr><td>Local technique (16 m²)</td><td>matériel, pharmacie vétérinaire</td><td class="amt num">550 000</td></tr>
+        <tr><td>Bureau / poste de gardien</td><td>petit local à l'entrée</td><td class="amt num">300 000</td></tr>
+        <tr><td>Contention + tri + quai d'embarquement</td><td>couloir, parc de tri, rampe</td><td class="amt num">450 000</td></tr>
+        <tr><td>Électricité + éclairage extérieur</td><td>coffret, réseau, 4 points lumineux</td><td class="amt num">500 000</td></tr>
+        <tr><td>Assainissement / puisard</td><td>drainage des eaux de lavage</td><td class="amt num">200 000</td></tr>
+        <tr><td>Portillon piéton + allées</td><td>circulation interne</td><td class="amt num">200 000</td></tr>
+        <tr class="sub"><td colspan="2">Sous-total Phase 2</td><td class="amt num">2 200 000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PHASE 3 -->
+  <div class="phase">
+    <div class="phbar" style="background:var(--p3)">
+      <span class="pn">PHASE 3</span><span class="pt">Extension / autonomie</span>
+      <span class="pp num">1 300 000 FCFA</span>
+    </div>
+    <table>
+      <thead><tr><th>Lot</th><th>Détail</th><th class="amt">Montant (FCFA)</th></tr></thead>
+      <tbody>
+        <tr><td>Silo / trémie d'aliments</td><td>stockage des concentrés</td><td class="amt num">350 000</td></tr>
+        <tr><td>Panneau solaire + pompe</td><td>pompage / énergie autonome</td><td class="amt num">700 000</td></tr>
+        <tr><td>Aire de compostage</td><td>valorisation du fumier</td><td class="amt num">150 000</td></tr>
+        <tr><td>Haie brise-vent / arbres d'ombrage</td><td>plantations, confort thermique</td><td class="amt num">100 000</td></tr>
+        <tr class="sub"><td colspan="2">Sous-total Phase 3</td><td class="amt num">1 300 000</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="total">
+    <span class="big num">9 200 000 FCFA</span>
+    <span class="lab">Total infrastructures (Phases 0 à 3)</span>
+    <span class="side">+ cheptel de départ &amp; fonctionnement 1<sup>re</sup> année<br>≈ 2 700 000 FCFA → projet global ≈ 11,9 M FCFA</span>
+  </div>
+
+  <div class="note">
+    <b>Notes.</b> Les montants sont des <b>ordres de grandeur</b> destinés au chiffrage : ils varient selon les prix locaux des matériaux et de la main-d'œuvre à Korhogo. Le <b>démarrage est possible dès la fin de la Phase 1</b> (bergerie, eau, clôture, quarantaine, fumière). Les Phases 2 et 3 peuvent être étalées selon la trésorerie et réinvesties à partir des premières ventes.
+    <br><br>
+    <b>Hors budget infrastructures :</b> achat du cheptel de départ (20–30 brebis + 1–2 béliers), aliments et suivi vétérinaire de la première année. Avant construction, faire <b>coter et valider</b> chaque lot par un professionnel du bâtiment sur place.
+  </div>
+
+</div>
+</body>
+</html>

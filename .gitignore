@@ -11,6 +11,7 @@ venv/
 # Fichiers générés
 output/*.pdf
 output/*.pptx
+output/*.svg
 
 # Système
 .DS_Store

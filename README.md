@@ -15,6 +15,8 @@ elevage/
 │   ├── make_arch.py            → Dossier architectural + VUE 3D (PDF, 4 pages)
 │   ├── make_plan400.py         → Plan de construction sur 400 m² (PDF, 3 pages)
 │   ├── make_fiche.py           → Fiche d'achat des moutons au marché (PDF, 2 pages)
+│   ├── make_site_master.py     → Plan de masse architectural DÉTAILLÉ, toutes
+│   │                             infrastructures + légende numérotée (SVG)
 │   └── draw_plan_png.py        → Régénère l'image du plan de masse (assets/site_plan.*)
 ├── node/
 │   └── build_deck.js           → Présentation partenaires (PowerPoint .pptx, 17 diapos)
@@ -74,6 +76,21 @@ python3 python/make_plan400.py
 python3 python/make_fiche.py
 # → output/fiche_achat_moutons.pdf
 ```
+
+**Plan de masse architectural détaillé (SVG)**
+
+Plan de masse complet et coté à l'échelle, montrant **toutes les infrastructures**
+(bâtiments, élevage/manipulation, réseaux eau/électricité/assainissement, gestion
+des effluents, aménagements extérieurs) avec une **légende numérotée**, les tracés
+de réseaux, l'échelle graphique, la rose des vents et un cartouche.
+
+```bash
+python3 python/make_site_master.py
+# → output/plan_masse_detaille.svg  (s'ouvre dans un navigateur ou tout éditeur SVG)
+```
+
+Aucune dépendance : ce script n'utilise que la bibliothèque standard de Python.
+Les infrastructures et coordonnées se modifient en haut du fichier.
 
 **Présentation partenaires (PowerPoint)**
 

@@ -34,14 +34,6 @@
     padding: 30px; color: var(--ink); background: #f7faf5; z-index: 20; }
   #err div { max-width: 520px; }
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-  }
-}
-</script>
 </head>
 <body>
 <div id="app"></div>
@@ -67,13 +59,19 @@
 
 <div id="err"><div>
   <h2>Impossible de charger la 3D</h2>
-  <p>Cette maquette a besoin d'une connexion internet (bibliothèque Three.js) et d'un navigateur récent (Chrome, Edge, Safari, Firefox).</p>
+  <p>Cette maquette utilise la bibliothèque Three.js embarquée dans le dossier
+  <code>web/vendor/</code>. Vérifiez que ce dossier accompagne bien le fichier HTML,
+  et ouvrez la page dans un navigateur récent (Chrome, Edge, Safari, Firefox).</p>
+  <p style="color:#607d8b;font-size:13px">Aucune connexion internet n'est nécessaire.</p>
 </div></div>
 
-<script type="module">
-// Three.js est chargé depuis un CDN (connexion internet requise). On importe
-// dynamiquement pour pouvoir afficher un message clair si le chargement échoue.
-let THREE, OrbitControls;
+<!-- Three.js embarqué localement (web/vendor/) — aucune connexion internet
+     requise. Scripts « classiques » (pas de modules ES) pour fonctionner en
+     ouvrant directement le fichier (file://) dans le navigateur. -->
+<script src="./vendor/three.min.js"></script>
+<script src="./vendor/OrbitControls.js"></script>
+<script>
+"use strict";
 
 // ---------------------------------------------------------------------------
 // IMPLANTATION — mêmes coordonnées (en mètres) que python/make_arch.py et
@@ -101,7 +99,6 @@ const C = PLOT / 2;
 const S = (x, y) => ({ X: x - C, Z: -(y - C) });
 
 let renderer, scene, camera, controls, autoRotate = true;
-let firstFrame = false, watchdog = null;
 
 function init() {
   const app = document.getElementById('app');
@@ -119,7 +116,7 @@ function init() {
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   app.appendChild(renderer.domElement);
 
-  controls = new OrbitControls(camera, renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
   controls.target.set(0, 1.5, 0);
@@ -412,26 +409,24 @@ function animate() {
   }
   controls.update();
   renderer.render(scene, camera);
-  if (!firstFrame) {           // le rendu tourne : on annule le message d'erreur
-    firstFrame = true;
-    if (watchdog) clearTimeout(watchdog);
-  }
 }
 
 function showError() {
   document.getElementById('err').style.display = 'grid';
 }
 
-// Bootstrap : import dynamique du CDN + garde-fou si rien ne s'affiche.
-(async () => {
-  watchdog = setTimeout(() => { if (!firstFrame) showError(); }, 9000);
+// Bootstrap : les bibliothèques sont chargées par les <script> ci-dessus.
+// Si elles manquent (dossier vendor/ absent) ou si la WebGL échoue, on affiche
+// un message clair au lieu d'un écran vide.
+(function boot() {
+  if (typeof THREE === 'undefined' || typeof THREE.OrbitControls === 'undefined') {
+    showError();
+    return;
+  }
   try {
-    THREE = await import('three');
-    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
     init();
   } catch (e) {
     console.error(e);
-    if (watchdog) clearTimeout(watchdog);
     showError();
   }
 })();

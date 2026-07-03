@@ -19,7 +19,8 @@ elevage/
 ├── node/
 │   └── build_deck.js           → Présentation partenaires (PowerPoint .pptx, 17 diapos)
 ├── web/
-│   └── maquette_3d_ferme.html  → Maquette 3D interactive (à ouvrir dans un navigateur)
+│   ├── maquette_3d_ferme.html  → Maquette 3D interactive (à ouvrir dans un navigateur)
+│   └── vendor/                 → Three.js embarqué (pour un fonctionnement 100 % hors-ligne)
 ├── assets/
 │   └── site_plan.png           → Image du plan de masse (utilisée par la présentation)
 ├── output/                     → Les fichiers générés arrivent ici
@@ -96,8 +97,10 @@ web/maquette_3d_ferme.html
 * Clic droit : déplacer
 * Bouton en haut à droite : rotation automatique / recentrer
 
-> La maquette charge la bibliothèque Three.js depuis internet : une connexion est
-> nécessaire au premier chargement.
+> **Fonctionne 100 % hors-ligne** : la bibliothèque Three.js est embarquée dans
+> `web/vendor/`. Aucune connexion internet n'est nécessaire. Pense simplement à
+> garder le dossier `web/vendor/` à côté du fichier `maquette_3d_ferme.html` si
+> tu le déplaces ou l'envoies à quelqu'un.
 
 ## 5. Notes utiles
 

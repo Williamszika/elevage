@@ -1,0 +1,20 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Fichiers générés
+output/*.pdf
+output/*.pptx
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Intermédiaire de génération d'image
+assets/site_plan.pdf

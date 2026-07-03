@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Maquette 3D — Ferme d'élevage ovin, Tchoro (Korhogo)</title>
+<style>
+  :root { --green:#2e7d32; --greenD:#1b5e20; --ink:#263238; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, Arial, sans-serif; }
+  #app { position: fixed; inset: 0; }
+  canvas { display: block; }
+  .panel {
+    position: fixed; top: 14px; left: 14px; z-index: 10;
+    background: rgba(255,255,255,.92); border: 1px solid #d8cdb8; border-radius: 12px;
+    padding: 12px 14px; max-width: 300px; box-shadow: 0 6px 22px rgba(0,0,0,.15);
+    color: var(--ink);
+  }
+  .panel h1 { font-size: 15px; margin: 0 0 2px; color: var(--greenD); }
+  .panel p { font-size: 12px; margin: 4px 0; color: #4a5b63; line-height: 1.35; }
+  .legend { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; margin-top: 8px; font-size: 11.5px; }
+  .sw { width: 14px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,.25); align-self: center; }
+  .controls { position: fixed; top: 14px; right: 14px; z-index: 10; display: flex; gap: 8px; flex-direction: column; }
+  .btn {
+    background: var(--green); color: #fff; border: none; border-radius: 10px; padding: 9px 13px;
+    font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.2);
+  }
+  .btn:hover { background: var(--greenD); }
+  .btn.off { background: #90a4ae; }
+  .hint { position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 10;
+    background: rgba(38,50,56,.82); color: #fff; font-size: 12px; padding: 7px 14px; border-radius: 20px; }
+  .note { position: fixed; bottom: 12px; right: 14px; z-index: 10; font-size: 11px; color: #607d8b; }
+  #err { position: fixed; inset: 0; display: none; place-items: center; text-align: center;
+    padding: 30px; color: var(--ink); background: #f7faf5; z-index: 20; }
+  #err div { max-width: 520px; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="app"></div>
+
+<div class="panel">
+  <h1>Ferme d'élevage ovin</h1>
+  <p><b>Tchoro — Korhogo.</b> Maquette 3D « vue d'artiste », non contractuelle. Terrain 20 × 20 m (400 m²).</p>
+  <div class="legend">
+    <span class="sw" style="background:#b0463c"></span><span>Toitures</span>
+    <span class="sw" style="background:#f3ede1"></span><span>Murs (parpaings)</span>
+    <span class="sw" style="background:#efe6d5"></span><span>Aire d'exercice</span>
+    <span class="sw" style="background:#cfe3b8"></span><span>Terrain / abords</span>
+  </div>
+</div>
+
+<div class="controls">
+  <button id="rotate" class="btn">⟳ Rotation auto</button>
+  <button id="reset" class="btn off">⌖ Recentrer</button>
+</div>
+
+<div class="hint">Glisser : tourner &nbsp;·&nbsp; Molette : zoomer &nbsp;·&nbsp; Clic droit : déplacer</div>
+<div class="note">Vue d'artiste — non contractuelle</div>
+
+<div id="err"><div>
+  <h2>Impossible de charger la 3D</h2>
+  <p>Cette maquette a besoin d'une connexion internet (bibliothèque Three.js) et d'un navigateur récent (Chrome, Edge, Safari, Firefox).</p>
+</div></div>
+
+<script type="module">
+// Three.js est chargé depuis un CDN (connexion internet requise). On importe
+// dynamiquement pour pouvoir afficher un message clair si le chargement échoue.
+let THREE, OrbitControls;
+
+// ---------------------------------------------------------------------------
+// IMPLANTATION — mêmes coordonnées (en mètres) que python/make_arch.py et
+// python/make_plan400.py. Origine (0,0) au coin sud-ouest du terrain.
+// ---------------------------------------------------------------------------
+const PLOT = 20.0;
+const ZONES = {
+  bergerie:   { x0:2.0,  y0:12.5, x1:14.0, y1:18.5, eave:2.6, ridge:4.1, roof:true },
+  fourrage:   { x0:15.0, y0:13.0, x1:18.5, y1:18.5, eave:3.0, ridge:3.0, roof:false },
+  technique:  { x0:15.0, y0:8.0,  x1:18.5, y1:12.5, eave:2.6, ridge:2.6, roof:false },
+  infirmerie: { x0:15.0, y0:4.0,  x1:18.5, y1:7.5,  eave:2.6, ridge:2.6, roof:false },
+  fumiere:    { x0:15.0, y0:1.5,  x1:18.5, y1:3.5,  eave:0.9, ridge:0.9, roof:false, manure:true },
+};
+const AIRE = { x0:2.0, y0:2.0, x1:14.0, y1:11.5 };
+
+const COL = {
+  wall: 0xf3ede1, wallDark: 0xd8cdb8, roof: 0xb0463c, roofDark: 0x8c3128,
+  grass: 0xcfe3b8, sand: 0xefe6d5, earth: 0x8d6e63, fence: 0x9c7a52,
+  water: 0x9ec9e0, sheep: 0xf7f5ee, sheepHead: 0x4a3b30,
+};
+
+// Convertit un point terrain (x, y en mètres) en coordonnées scène.
+// On centre le terrain sur l'origine ; x→X, y→ -Z (Z vers le fond).
+const C = PLOT / 2;
+const S = (x, y) => ({ X: x - C, Z: -(y - C) });
+
+let renderer, scene, camera, controls, autoRotate = true;
+let firstFrame = false, watchdog = null;
+
+function init() {
+  const app = document.getElementById('app');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdfeaf2);
+  scene.fog = new THREE.Fog(0xdfeaf2, 40, 90);
+
+  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 500);
+  resetCamera();
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  app.appendChild(renderer.domElement);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 1.5, 0);
+  controls.maxPolarAngle = Math.PI / 2.05;
+  controls.minDistance = 8;
+  controls.maxDistance = 70;
+
+  addLights();
+  buildGround();
+  buildAire();
+  Object.entries(ZONES).forEach(([k, z]) => buildBuilding(k, z));
+  buildFence();
+  buildGate();
+  buildWater();
+  buildSheep();
+  buildTrees();
+
+  addEventListener('resize', onResize);
+  document.getElementById('rotate').addEventListener('click', toggleRotate);
+  document.getElementById('reset').addEventListener('click', resetCamera);
+  animate();
+}
+
+function resetCamera() {
+  camera.position.set(18, 15, 22);
+  camera.lookAt(0, 1.5, 0);
+  if (controls) { controls.target.set(0, 1.5, 0); controls.update(); }
+}
+
+function addLights() {
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9fb98a, 0.75));
+  const sun = new THREE.DirectionalLight(0xfff4e0, 1.15);
+  sun.position.set(16, 26, 14);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  const d = 22;
+  sun.shadow.camera.left = -d; sun.shadow.camera.right = d;
+  sun.shadow.camera.top = d; sun.shadow.camera.bottom = -d;
+  sun.shadow.camera.near = 1; sun.shadow.camera.far = 80;
+  scene.add(sun);
+}
+
+function buildGround() {
+  const g = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 60),
+    new THREE.MeshStandardMaterial({ color: 0xbcd39a })
+  );
+  g.rotation.x = -Math.PI / 2; g.position.y = -0.02; g.receiveShadow = true;
+  scene.add(g);
+
+  // parcelle
+  const plot = new THREE.Mesh(
+    new THREE.PlaneGeometry(PLOT, PLOT),
+    new THREE.MeshStandardMaterial({ color: COL.grass })
+  );
+  plot.rotation.x = -Math.PI / 2; plot.position.y = 0; plot.receiveShadow = true;
+  scene.add(plot);
+
+  // bordure de la parcelle
+  const edge = new THREE.LineSegments(
+    new THREE.EdgesGeometry(new THREE.PlaneGeometry(PLOT, PLOT)),
+    new THREE.LineBasicMaterial({ color: 0x1b5e20 })
+  );
+  edge.rotation.x = -Math.PI / 2; edge.position.y = 0.02;
+  scene.add(edge);
+}
+
+function buildAire() {
+  const w = AIRE.x1 - AIRE.x0, h = AIRE.y1 - AIRE.y0;
+  const cx = (AIRE.x0 + AIRE.x1) / 2, cy = (AIRE.y0 + AIRE.y1) / 2;
+  const p = S(cx, cy);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, h),
+    new THREE.MeshStandardMaterial({ color: COL.sand })
+  );
+  m.rotation.x = -Math.PI / 2; m.position.set(p.X, 0.015, p.Z); m.receiveShadow = true;
+  scene.add(m);
+}
+
+function buildBuilding(name, z) {
+  const w = z.x1 - z.x0, d = z.y1 - z.y0;
+  const cx = (z.x0 + z.x1) / 2, cy = (z.y0 + z.y1) / 2;
+  const p = S(cx, cy);
+
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: z.manure ? COL.earth : COL.wall, roughness: 0.9,
+  });
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(w, z.eave, d), wallMat);
+  walls.position.set(p.X, z.eave / 2, p.Z);
+  walls.castShadow = true; walls.receiveShadow = true;
+  scene.add(walls);
+
+  if (z.manure) return; // pas de toit sur la fumière
+
+  if (z.roof) {
+    // toit à deux pentes (faîtage le long de l'axe Z, pentes selon X)
+    const roofMat = new THREE.MeshStandardMaterial({ color: COL.roof, roughness: 0.6 });
+    const oh = 0.5;                       // débord
+    const rw = w + oh * 2, rd = d + oh * 2;
+    const rise = z.ridge - z.eave;
+    const geo = makeGableRoof(rw, rd, rise);
+    const roof = new THREE.Mesh(geo, roofMat);
+    roof.position.set(p.X, z.eave, p.Z);
+    roof.castShadow = true;
+    scene.add(roof);
+  } else {
+    // toit plat / mono-pente léger
+    const roofMat = new THREE.MeshStandardMaterial({ color: COL.roof, roughness: 0.6 });
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.12, d + 0.4), roofMat);
+    roof.position.set(p.X, z.eave + 0.06, p.Z);
+    roof.castShadow = true; roof.receiveShadow = true;
+    scene.add(roof);
+  }
+
+  // porte sombre côté sud (y0)
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x5d4433 });
+  const door = new THREE.Mesh(new THREE.BoxGeometry(Math.min(1.0, w * 0.4), Math.min(2.0, z.eave * 0.8), 0.06), doorMat);
+  const ps = S(cx, z.y0);
+  door.position.set(ps.X, Math.min(1.0, z.eave * 0.4), ps.Z + 0.02);
+  scene.add(door);
+}
+
+// Prisme triangulaire : toit à deux pentes, faîtage parallèle à Z.
+function makeGableRoof(w, d, rise) {
+  const hw = w / 2, hd = d / 2;
+  const g = new THREE.BufferGeometry();
+  const v = [
+    // base rectangle (y=0) et faîtage (y=rise) au centre en X
+    -hw, 0, -hd,   hw, 0, -hd,   hw, 0, hd,   -hw, 0, hd, // 0..3 base
+    0, rise, -hd,  0, rise, hd,                            // 4,5 ridge
+  ];
+  const idx = [
+    // pan gauche
+    0, 3, 5,  0, 5, 4,
+    // pan droit
+    1, 4, 5,  1, 5, 2,
+    // pignon avant (z=-hd)
+    0, 4, 1,
+    // pignon arrière (z=hd)
+    3, 2, 5,
+  ];
+  g.setAttribute('position', new THREE.Float32BufferAttribute(v, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+function buildFence() {
+  const mat = new THREE.MeshStandardMaterial({ color: COL.fence });
+  const postGeo = new THREE.CylinderGeometry(0.05, 0.05, 1.1, 6);
+  const railMat = new THREE.LineBasicMaterial({ color: 0x6b5636 });
+
+  const corners = [
+    [AIRE.x0, AIRE.y0], [AIRE.x1, AIRE.y0], [AIRE.x1, AIRE.y1], [AIRE.x0, AIRE.y1],
+  ];
+  // poteaux le long du périmètre
+  const step = 1.5;
+  const pts = [];
+  for (let i = 0; i < 4; i++) {
+    const [ax, ay] = corners[i];
+    const [bx, by] = corners[(i + 1) % 4];
+    const len = Math.hypot(bx - ax, by - ay);
+    const n = Math.round(len / step);
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const x = ax + (bx - ax) * t, y = ay + (by - ay) * t;
+      const p = S(x, y);
+      const post = new THREE.Mesh(postGeo, mat);
+      post.position.set(p.X, 0.55, p.Z); post.castShadow = true;
+      scene.add(post);
+      pts.push(new THREE.Vector3(p.X, 1.0, p.Z));
+    }
+    pts.push(null); // séparateur de côté
+  }
+  // lisses hautes (lignes)
+  let seg = [];
+  const flush = () => {
+    if (seg.length > 1) {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(seg),
+        railMat
+      );
+      scene.add(line);
+    }
+    seg = [];
+  };
+  for (const p of pts) { if (p === null) flush(); else seg.push(p); }
+  flush();
+}
+
+function buildGate() {
+  // portail au sud (y=0), entre x=8 et x=11
+  const mat = new THREE.MeshStandardMaterial({ color: COL.roofDark });
+  for (const x of [8, 11]) {
+    const p = S(x, 0);
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8), mat);
+    post.position.set(p.X, 0.7, p.Z); post.castShadow = true;
+    scene.add(post);
+  }
+}
+
+function buildWater() {
+  const p = S(4, 5.5);
+  const trough = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.55, 0.5, 0.35, 20),
+    new THREE.MeshStandardMaterial({ color: 0xb8ab90 })
+  );
+  trough.position.set(p.X, 0.17, p.Z); trough.castShadow = true; trough.receiveShadow = true;
+  scene.add(trough);
+  const water = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.48, 0.48, 0.06, 20),
+    new THREE.MeshStandardMaterial({ color: COL.water, metalness: 0.1, roughness: 0.2 })
+  );
+  water.position.set(p.X, 0.33, p.Z);
+  scene.add(water);
+}
+
+function makeSheep(x, y, rot = 0) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.42, 16, 12),
+    new THREE.MeshStandardMaterial({ color: COL.sheep, roughness: 1 })
+  );
+  body.scale.set(1.35, 0.85, 0.85); body.position.y = 0.55; body.castShadow = true;
+  g.add(body);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.17, 12, 10),
+    new THREE.MeshStandardMaterial({ color: COL.sheepHead, roughness: 1 })
+  );
+  head.position.set(0.6, 0.62, 0); head.castShadow = true;
+  g.add(head);
+  const legMat = new THREE.MeshStandardMaterial({ color: COL.sheepHead });
+  const legGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.35, 6);
+  [[0.32, 0.28], [0.32, -0.28], [-0.32, 0.28], [-0.32, -0.28]].forEach(([lx, lz]) => {
+    const leg = new THREE.Mesh(legGeo, legMat);
+    leg.position.set(lx, 0.18, lz);
+    g.add(leg);
+  });
+  const p = S(x, y);
+  g.position.set(p.X, 0, p.Z);
+  g.rotation.y = rot;
+  return g;
+}
+
+function buildSheep() {
+  const spots = [
+    [4.5, 4, 0.4], [6.2, 5.6, 1.2], [8, 3.6, -0.5], [5.5, 8, 2.4],
+    [9.5, 7, 0.9], [7, 9.5, -1.1], [10.5, 4.5, 1.8], [4.2, 9, -0.3],
+  ];
+  spots.forEach(([x, y, r]) => scene.add(makeSheep(x, y, r)));
+}
+
+function buildTrees() {
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x7a5a3a });
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x6fa053, roughness: 1 });
+  const spots = [[-1, -1], [21, 21], [21, -1], [-1, 21]];
+  spots.forEach(([x, y]) => {
+    const p = S(x, y);
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 1.6, 8), trunkMat);
+    trunk.position.set(p.X, 0.8, p.Z); trunk.castShadow = true;
+    scene.add(trunk);
+    const crown = new THREE.Mesh(new THREE.SphereGeometry(1.1, 12, 10), leafMat);
+    crown.position.set(p.X, 2.1, p.Z); crown.castShadow = true;
+    crown.scale.y = 0.85;
+    scene.add(crown);
+  });
+}
+
+function toggleRotate() {
+  autoRotate = !autoRotate;
+  const btn = document.getElementById('rotate');
+  btn.classList.toggle('off', !autoRotate);
+  btn.textContent = autoRotate ? '⟳ Rotation auto' : '⟳ Rotation (off)';
+}
+
+function onResize() {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (autoRotate) {
+    const a = 0.0016;
+    const x = camera.position.x, z = camera.position.z;
+    camera.position.x = x * Math.cos(a) - z * Math.sin(a);
+    camera.position.z = x * Math.sin(a) + z * Math.cos(a);
+    camera.lookAt(controls.target);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  if (!firstFrame) {           // le rendu tourne : on annule le message d'erreur
+    firstFrame = true;
+    if (watchdog) clearTimeout(watchdog);
+  }
+}
+
+function showError() {
+  document.getElementById('err').style.display = 'grid';
+}
+
+// Bootstrap : import dynamique du CDN + garde-fou si rien ne s'affiche.
+(async () => {
+  watchdog = setTimeout(() => { if (!firstFrame) showError(); }, 9000);
+  try {
+    THREE = await import('three');
+    ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+    init();
+  } catch (e) {
+    console.error(e);
+    if (watchdog) clearTimeout(watchdog);
+    showError();
+  }
+})();
+</script>
+</body>
+</html>

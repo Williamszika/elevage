@@ -1,0 +1,3 @@
+# Dépendances Python pour les générateurs de documents PDF
+# Ferme d'élevage ovin — Tchoro (Korhogo)
+reportlab>=4.0

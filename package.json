@@ -1,0 +1,13 @@
+{
+  "name": "ferme-moutons-korhogo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Générateur de la présentation partenaires (PowerPoint) — Ferme d'élevage ovin, Tchoro (Korhogo)",
+  "type": "commonjs",
+  "scripts": {
+    "build:deck": "node node/build_deck.js"
+  },
+  "dependencies": {
+    "pptxgenjs": "^3.12.0"
+  }
+}
